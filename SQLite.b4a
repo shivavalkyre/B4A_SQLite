@@ -1,0 +1,251 @@
+﻿Build1=Default,b4a.example
+File1=Layout.bal
+File2=LayoutLV.bal
+File3=test.sqlite3
+FileGroup1=Default Group
+FileGroup2=Default Group
+FileGroup3=Default Group
+Group=Default Group
+Library1=core
+Library2=runtimepermissions
+Library3=sql
+Library4=xcustomlistview
+Library5=xui
+Library6=ime
+ManifestCode='This code will be applied to the manifest file during compilation.~\n~'You do not need to modify it in most cases.~\n~'See this link for for more information: https://www.b4x.com/forum/showthread.php?p=78136~\n~AddManifestText(~\n~<uses-sdk android:minSdkVersion="14" android:targetSdkVersion="31"/>~\n~<supports-screens android:largeScreens="true" ~\n~    android:normalScreens="true" ~\n~    android:smallScreens="true" ~\n~    android:anyDensity="true"/>)~\n~SetApplicationAttribute(android:icon, "@drawable/icon")~\n~SetApplicationAttribute(android:label, "$LABEL$")~\n~CreateResourceFromFile(Macro, Themes.LightTheme)~\n~~\n~AddManifestText(<uses-permission~\n~   android:name="android.permission.WRITE_EXTERNAL_STORAGE"~\n~   android:maxSdkVersion="18" />~\n~)~\n~'End of default text.~\n~
+Module1=Starter
+NumberOfFiles=3
+NumberOfLibraries=6
+NumberOfModules=1
+Version=12.2
+@EndOfDesignText@
+#Region  Project Attributes 
+	#ApplicationLabel: SQLite Sample
+	#VersionCode: 1
+	#VersionName: 
+	'SupportedOrientations possible values: unspecified, landscape or portrait.
+	#SupportedOrientations: portrait
+	#CanInstallToExternalStorage: False
+#End Region
+
+#Region  Activity Attributes 
+	#FullScreen: False
+	#IncludeTitle: True
+#End Region
+
+Sub Process_Globals
+	'These global variables will be declared once when the application starts.
+	'These variables can be accessed from all modules.
+	Private rp As RuntimePermissions
+	Private SQLite As SQL
+	
+End Sub
+
+Sub Globals
+	'These global variables will be redeclared each time the activity is created.
+	Private CustomListView1 As CustomListView
+	
+	Private EditText1 As EditText
+	Private EditText2 As EditText
+	Private PnlUser As Panel
+	Private lblEdit As Label
+	Private lblDelete As Label
+	Private LblUsername As Label
+	Private LblPassword As Label
+	Private StoreType As Int
+	Private SelectedID As Int
+	Private IME1 As IME
+End Sub
+
+Sub Activity_Create(FirstTime As Boolean)
+	rp.GetSafeDirDefaultExternal("")
+	StoragePermission
+	IME1.Initialize("IME1")
+	If FirstTime Then
+		If File.Exists(File.DirDefaultExternal,"test.sqlite3") Then
+			SQLite.Initialize(File.DirDefaultExternal, "test.sqlite3", True)
+		Else
+			File.Copy(File.DirAssets,"test.sqlite3",File.DirDefaultExternal,"test.sqlite3")
+			SQLite.Initialize(File.DirDefaultExternal, "test.sqlite3", True)
+		End If
+	End If
+	
+	Activity.LoadLayout("Layout")
+	LoadSampleData
+End Sub
+
+Sub Activity_Resume
+
+End Sub
+
+Sub Activity_Pause (UserClosed As Boolean)
+
+End Sub
+
+
+Sub StoragePermission
+	For Each Permission As String In Array(rp.PERMISSION_WRITE_EXTERNAL_STORAGE)
+		rp.CheckAndRequest(Permission)
+		Wait For Activity_PermissionResult (Permission As String, Result As Boolean)
+		If Result = False Then
+			ToastMessageShow("No permission!", True)
+			Activity.Finish
+			Return
+		End If
+	Next
+End Sub
+
+Sub LoadSampleData
+	
+	If File.Exists(File.DirDefaultExternal,"test.sqlite3") Then
+		SQLite.Initialize(File.DirDefaultExternal, "test.sqlite3", True)
+	Else
+		File.Copy(File.DirAssets,"test.sqlite3",File.DirDefaultExternal,"test.sqlite3")
+		SQLite.Initialize(File.DirDefaultExternal, "test.sqlite3", True)
+	End If
+	
+	CustomListView1.Clear
+	
+	SQLite.BeginTransaction
+	Try
+		Dim Cursor As Cursor
+		Cursor = SQLite.ExecQuery("SELECT * FROM users")
+		For i = 0 To Cursor.RowCount - 1
+			Cursor.Position = i
+			Log(Cursor.Getint("id"))
+			Log(Cursor.GetString("username"))
+			Log(Cursor.GetString("password"))
+			Dim id As Int = Cursor.Getint("id")
+			Dim username As String = Cursor.GetString("username")
+			Dim password As String = Cursor.GetString("password")
+			CustomListView1.Add(CreateLVUser(100%x,150dip,id,username,password),i)
+		Next
+		StoreType = 0
+		SQLite.TransactionSuccessful
+	Catch
+		Log(LastException.Message) 'no changes will be made
+	End Try
+	SQLite.EndTransaction
+End Sub
+
+Sub LoadSampleDataByID(id As Int)
+	
+	If File.Exists(File.DirDefaultExternal,"test.sqlite3") Then
+		SQLite.Initialize(File.DirDefaultExternal, "test.sqlite3", True)
+	Else
+		File.Copy(File.DirAssets,"test.sqlite3",File.DirDefaultExternal,"test.sqlite3")
+		SQLite.Initialize(File.DirDefaultExternal, "test.sqlite3", True)
+	End If
+	
+	SQLite.BeginTransaction
+	Try
+		Dim Cursor As Cursor
+		Cursor = SQLite.ExecQuery("SELECT * FROM users WHERE id='"& id &"'")
+		For i = 0 To Cursor.RowCount - 1
+			Cursor.Position = i
+			Log(Cursor.Getint("id"))
+			Log(Cursor.GetString("username"))
+			Log(Cursor.GetString("password"))
+			Dim id As Int = Cursor.Getint("id")
+			Dim username As String = Cursor.GetString("username")
+			Dim password As String = Cursor.GetString("password")
+			EditText1.Text = username
+			EditText2.Text = password
+		Next
+		SQLite.TransactionSuccessful
+	Catch
+		Log(LastException.Message) 'no changes will be made
+	End Try
+	SQLite.EndTransaction
+End Sub
+
+Sub StoreSampleData(username As String,password As String)
+	If File.Exists(File.DirDefaultExternal,"test.sqlite3") Then
+		SQLite.Initialize(File.DirDefaultExternal, "test.sqlite3", True)
+	Else
+		File.Copy(File.DirAssets,"test.sqlite3",File.DirDefaultExternal,"test.sqlite3")
+		SQLite.Initialize(File.DirDefaultExternal, "test.sqlite3", True)
+	End If
+	
+	SQLite.BeginTransaction
+	Try
+		SQLite.ExecNonQuery2("INSERT INTO users (username,password) VALUES (?,?)",Array As Object(username,password))
+		MsgboxAsync("Store data success","SQLite Sample")
+		SQLite.TransactionSuccessful
+	Catch
+		Log(LastException.Message) 'no changes will be made
+	End Try
+	SQLite.EndTransaction
+	
+End Sub
+
+Sub EditSampleData(id As Int,username As String,password As String)
+	SQLite.BeginTransaction
+	Try
+		
+		SQLite.ExecNonQuery2("UPDATE users SET username=?,password=? WHERE id=?", Array As Object(username,password,id))
+		MsgboxAsync("Edit data success","SQLite Sample")
+		SQLite.TransactionSuccessful
+	Catch
+		Log(LastException.Message) 'no changes will be made
+	End Try
+	SQLite.EndTransaction
+End Sub
+
+Sub DeleteSampleData(id As Int)
+	SQLite.BeginTransaction
+	Try
+		SQLite.ExecNonQuery("DELETE FROM users WHERE id='"& id &"'")
+		MsgboxAsync("Delete data success","SQLite Sample")
+		SQLite.TransactionSuccessful
+	Catch
+		Log(LastException.Message) 'no changes will be made
+	End Try
+	SQLite.EndTransaction
+	
+End Sub
+
+
+Sub CreateLVUser(Width As Int,Height As Int,id As Int,username As String,password As String)As Panel
+	Dim p As Panel
+	p.Initialize("")
+	p.SetLayout(0, 0, Width, Height)
+	p.LoadLayout("LayoutLV")
+	LblUsername.Text=username
+	LblPassword.Text =password
+	PnlUser.Tag = id
+	lblEdit.Tag=id
+	lblDelete.Tag=id
+	Return p
+End Sub
+
+Sub Button1_Click
+	If EditText1.Text.Length>0 And EditText2.Text.Length>0 Then
+		If StoreType = 0 Then
+			StoreSampleData(EditText1.Text,EditText2.Text)
+		Else
+		   EditSampleData(SelectedID,EditText1.Text,EditText2.Text)
+		End If
+	End If
+	EditText1.Text =""
+	EditText2.Text =""
+	IME1.HideKeyboard
+	LoadSampleData
+End Sub
+
+Private Sub lblEdit_Click
+	Dim send As Label
+	send = Sender
+	SelectedID = send.Tag
+	StoreType = 1
+	LoadSampleDataByID(send.Tag)
+End Sub
+
+Private Sub lblDelete_Click
+	Dim send As Label
+	send = Sender
+	DeleteSampleData(send.Tag)
+	LoadSampleData
+End Sub
+
+
